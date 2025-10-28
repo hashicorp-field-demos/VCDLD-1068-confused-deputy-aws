@@ -82,11 +82,13 @@ module "bastion" {
 }
 
 
-# Module 5: Azure AD Applications
-module "azure_ad_app" {
-  source           = "./modules/azure-ad-app"
-  alb_https_url    = module.bastion.alb_https_url
-  ad_user_password = var.ad_user_password
+# Module 5: Keycloak Authentication
+module "keycloak" {
+  source = "./modules/keycloak"
+  
+  keycloak_url   = var.keycloak_url
+  user_password  = var.user_password
+  alb_https_url  = module.bastion.alb_https_url
 }
 
 # Module 6: Vault Authentication and Database Configuration
@@ -97,12 +99,12 @@ module "vault_auth" {
   docdb_username         = var.docdb_master_username
   docdb_password         = var.docdb_master_password
 
-  # JWT Auth configuration
-  jwt_oidc_discovery_url     = var.jwt_oidc_discovery_url
-  jwt_bound_issuer           = var.jwt_bound_issuer
-  jwt_bound_audiences        = module.azure_ad_app.products_mcp_client_id
-  readonly_group_alias_name  = module.azure_ad_app.dbread_group_id  #var.readonly_group_alias_name
-  readwrite_group_alias_name = module.azure_ad_app.dbadmin_group_id #var.readwrite_group_alias_name
+  # JWT Auth configuration for Keycloak
+  jwt_oidc_discovery_url     = module.keycloak.oidc_discovery_url
+  jwt_bound_issuer           = module.keycloak.oidc_issuer_url
+  jwt_bound_audiences        = module.keycloak.products_mcp_client_id
+  readonly_group_alias_name  = module.keycloak.dbread_group_name
+  readwrite_group_alias_name = module.keycloak.dbadmin_group_name
 
-  depends_on = [module.hcp_vault]
+  depends_on = [module.hcp_vault, module.keycloak]
 }

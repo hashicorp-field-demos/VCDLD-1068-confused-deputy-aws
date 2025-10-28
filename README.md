@@ -1,20 +1,21 @@
-# Secure Agentic Application with AWS, HCP Vault, and Microsoft Entra ID
+# Secure Agentic Application with AWS, HCP Vault, and Keycloak
 
 A comprehensive demonstration of secure agentic workflows that addresses the **Confused Deputy problem** through end-to-end authentication and authorization using OAuth2, HCP Vault, and AWS services. This solution showcases a production-ready, zero-trust architecture for AI/ML workloads with intelligent agents powered by AWS Bedrock.
 
 ## Overview
 
-This repository demonstrates a **secure agentic application** that integrates multiple AWS services, Microsoft Entra ID, and HashiCorp Vault to create a zero-trust architecture for AI/ML workloads. The solution provides:
+This repository demonstrates a **secure agentic application** that integrates multiple AWS services, Keycloak, and HashiCorp Vault to create a zero-trust architecture for AI/ML workloads. The solution provides:
 
 ### Key Features
 
 - 🔐 **Zero Trust Architecture**: Every component validates and authorizes requests
 - 🔑 **Dynamic Secret Management**: Short-lived, user role-specific database credentials via HCP Vault
-- 👥 **Policy-Based Access Control**: Microsoft Entra ID groups mapped to Vault policies
+- 👥 **Policy-Based Access Control**: User groups mapped to Vault policies
 - 🔄 **Secure Token Propagation**: End-to-end JWT validation and delegation
 - 🤖 **Agentic Intelligence**: AI-powered product management using AWS Bedrock Nova Pro
 - 🏢 **Multi-tenancy Support**: User and group-based data isolation
 - 📊 **Audit Trail**: Comprehensive logging and monitoring
+- 🔓 **Open Source Authentication**: Keycloak-based identity and access management
 
 ## Architecture
 
@@ -34,14 +35,14 @@ The application consists of three main components that work together to provide 
          │                   │          │                   │
          ▼                   ▼          ▼                   ▼
 ┌─────────────────┐   ┌────────────┐  ┌────────────┐   ┌─────────────────┐
-│ Microsoft       │   │ Microsoft  │  │ AWS        │   │   HCP Vault     │
-│ Entra ID        │   │ Entra ID   │  │ Bedrock    │   │ + DocumentDB    │
+│    Keycloak     │   │  Keycloak  │  │ AWS        │   │   HCP Vault     │
+│                 │   │            │  │ Bedrock    │   │ + DocumentDB    │
 └─────────────────┘   └────────────┘  └────────────┘   └─────────────────┘
 ```
 
 ### Application Components
 
-1. **products-web**: Streamlit-based web interface with Microsoft Entra ID OAuth authentication
+1. **products-web**: Streamlit-based web interface with Keycloak OAuth authentication
 2. **products-agent**: FastAPI service with AI agent capabilities using AWS Bedrock Nova Pro model
 3. **products-mcp**: Model Context Protocol server for secure database operations with dynamic credentials
 
@@ -49,11 +50,31 @@ The application consists of three main components that work together to provide 
 
 - **HCP Vault**: Centralized secrets management and identity-based authentication
 - **AWS DocumentDB**: MongoDB-compatible database for product data
-- **Microsoft Entra ID**: Identity provider and OAuth/JWT authentication
+- **Keycloak**: Open-source identity provider and OAuth/JWT authentication
 - **AWS Bedrock**: AI/ML services with Nova Pro foundation model
 - **AWS Infrastructure**: VPC, security groups, bastion host, and networking
 
 ## Quick Start
+
+### 0. Keycloak Setup
+
+Start Keycloak locally using Docker Compose:
+
+```bash
+# Start Keycloak (in docker-compose directory)
+cd docker-compose
+docker-compose up -d keycloak
+
+# Keycloak will be available at http://localhost:8080
+# Admin credentials: admin/admin
+```
+
+Terraform will automatically configure:
+- Realm: `confused-deputy-realm`
+- Users: alice (readonly), bob (admin)
+- Groups: dbread, dbadmin
+- Clients: products-web, products-agent, products-mcp
+- Token exchange for on-behalf-of flows
 
 ### 1. Infrastructure Setup
 
@@ -66,6 +87,12 @@ terraform plan
 terraform apply
 ```
 
+This will create:
+- HCP Vault cluster with JWT authentication
+- AWS infrastructure (VPC, DocumentDB, bastion)
+- Keycloak realm, clients, users, and groups
+- Vault policies mapped to Keycloak groups
+
 📖 **For detailed infrastructure setup instructions, see [terraform/README.md](./terraform/README.md)**
 
 ### 2. Environment Configuration
@@ -73,14 +100,16 @@ terraform apply
 Generate environment files for your deployment target:
 
 ```bash
-# Generate .env files for local development (no Docker)
-./terraform/export-env.sh local
+cd terraform
 
-# Generate .env files for local Docker Compose
-./terraform/export-env.sh docker
+# For local development
+./export-env.sh local
 
-# Generate .env files for AWS deployment
-./terraform/export-env.sh aws
+# For Docker Compose
+./export-env.sh docker
+
+# For AWS deployment
+./export-env.sh aws
 ```
 
 **Environment Options:**

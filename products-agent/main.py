@@ -28,7 +28,7 @@ from contextlib import asynccontextmanager
 
 
 from auth.jwt_utils import JWTValidator, extract_token_from_header
-from auth.entra_token_service import get_entra_token_service
+from auth.keycloak_token_service import get_keycloak_token_service
 from api_models import AgentRequest, AgentResponse, ErrorResponse, HealthResponse
 from products_agent import ProductsAgent
 
@@ -162,10 +162,10 @@ async def invoke_agent(
         # Get the original user token
         user_token = current_user["_original_token"]
 
-        # Exchange user token for on-behalf-of token
-        logger.debug("Exchanging user token for on-behalf-of token")
-        entra_service = get_entra_token_service()
-        obo_token = await entra_service.exchange_token_on_behalf_of(user_token)
+        # Exchange user token for on-behalf-of token using Keycloak
+        logger.debug("Exchanging user token for on-behalf-of token with Keycloak")
+        keycloak_service = get_keycloak_token_service()
+        obo_token = await keycloak_service.exchange_token_on_behalf_of(user_token)
 
         # Invoke the ProductsAgent with the on-behalf-of token
         logger.debug(f"{x_correlation_id} - Invoking ProductsAgent")
@@ -215,10 +215,10 @@ async def invoke_agent_stream(
         # Get the original user token
         user_token = current_user["_original_token"]
 
-        # Exchange user token for on-behalf-of token
-        logger.debug("Exchanging user token for on-behalf-of token")
-        entra_service = get_entra_token_service()
-        obo_token = await entra_service.exchange_token_on_behalf_of(user_token)
+        # Exchange user token for on-behalf-of token using Keycloak
+        logger.debug("Exchanging user token for on-behalf-of token with Keycloak")
+        keycloak_service = get_keycloak_token_service()
+        obo_token = await keycloak_service.exchange_token_on_behalf_of(user_token)
 
         # Invoke the ProductsAgent with the on-behalf-of token
         logger.debug("Invoking ProductsAgent stream")

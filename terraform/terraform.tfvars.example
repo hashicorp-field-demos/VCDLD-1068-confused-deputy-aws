@@ -17,12 +17,14 @@ docdb_instance_count     = 1
 # Bastion Host Configuration  
 bastion_instance_type = "t3.medium"
 
-# JWT Auth Configuration
-jwt_oidc_discovery_url = "https://your-oidc-provider.com/.well-known/openid_configuration"
-jwt_bound_issuer="https://login.microsoftonline.com/<tenant-id>/v2.0
+# ========================================
+# Keycloak Authentication Configuration
+# ========================================
 
-# AzureAD service principal configuration
-azure_client_id="your-azure-service-principal-client-id"
-azure_client_secret="your-azure-service-principal-client-secret"
-azure_tenant_id="your-azure-tenant-id"
-ad_user_password="password-for-test-users!"
+# Keycloak Server Configuration
+keycloak_url            = "http://localhost:8080"  # Change to your Keycloak URL for production
+keycloak_admin_username = "admin"                  # Keycloak admin username
+keycloak_admin_password = "admin"                  # Change for production!
+
+# Test User Password
+user_password = "password"  # Password for alice and bob test users (change for production!)
