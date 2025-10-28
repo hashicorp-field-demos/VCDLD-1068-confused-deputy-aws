@@ -1,25 +1,35 @@
 #!/bin/bash
 
 # This script generates .env files for local or docker development environments.
-# It accepts one argument: 'local' or 'docker'.
+# It accepts two arguments: environment type and auth provider.
 
 # --- Argument Validation ---
 if [ -z "$1" ]; then
-    echo "Usage: $0 [local|docker|aws]"
-    echo "  local:  Configure services to run on localhost."
-    echo "  docker: Configure services to run in Docker containers."
-    echo "  aws: Configure services to run in Docker containers in AWS."
+    echo "Usage: $0 [local|docker|aws] [entra|keycloak]"
+    echo "  Environment:"
+    echo "    local:  Configure services to run on localhost."
+    echo "    docker: Configure services to run in Docker containers."
+    echo "    aws:    Configure services to run in Docker containers in AWS."
+    echo "  Auth Provider (optional, defaults to keycloak):"
+    echo "    entra:     Use Microsoft Entra ID"
+    echo "    keycloak:  Use Keycloak (default)"
     exit 1
 fi
 
 ENV_TYPE=$1
+AUTH_PROVIDER=${2:-keycloak}
 
 if [ "$ENV_TYPE" != "local" ] && [ "$ENV_TYPE" != "docker" ] && [ "$ENV_TYPE" != "aws" ]; then
-    echo "Error: Invalid argument. Please use 'local', 'docker', or 'aws'."
+    echo "Error: Invalid environment type. Please use 'local', 'docker', or 'aws'."
     exit 1
 fi
 
-echo "Generating .env files for '$ENV_TYPE' environment..."
+if [ "$AUTH_PROVIDER" != "entra" ] && [ "$AUTH_PROVIDER" != "keycloak" ]; then
+    echo "Error: Invalid auth provider. Please use 'entra' or 'keycloak'."
+    exit 1
+fi
+
+echo "Generating .env files for '$ENV_TYPE' environment with '$AUTH_PROVIDER' authentication..."
 
 
 # --- Environment-specific Variables ---
@@ -31,6 +41,7 @@ if [ "$ENV_TYPE" = "local" ]; then
     REDIRECT_URI=http://localhost:8501/oauth2callback
     VAULT_ADDR=$(terraform output -state=$TF_STATE -raw vault_public_endpoint_url)
     ENV_FILE_NAME=".env"
+    KEYCLOAK_URL="http://localhost:8080"
 elif [ "$ENV_TYPE" = "aws" ]; then
     ROOT_PATH="/Users/ravipanchal/learn/vault/confused-deputy-aws/docker-compose"
     PRODUCTS_AGENT_URL="http://products-agent:8001"
@@ -39,6 +50,7 @@ elif [ "$ENV_TYPE" = "aws" ]; then
     REDIRECT_URI=$(terraform output -state=$TF_STATE -raw alb_https_url)/oauth2callback
     VAULT_ADDR=$(terraform output -state=$TF_STATE -raw vault_private_endpoint_url)
     ENV_FILE_NAME=".env"
+    KEYCLOAK_URL="http://keycloak:8080"
 else # docker
     ROOT_PATH="/Users/ravipanchal/learn/vault/confused-deputy-aws/docker-compose"
     PRODUCTS_AGENT_URL="http://products-agent:8001"
@@ -47,31 +59,71 @@ else # docker
     REDIRECT_URI=http://localhost:8501/oauth2callback
     VAULT_ADDR=$(terraform output -state=$TF_STATE -raw vault_public_endpoint_url)
     ENV_FILE_NAME=".env.local"
+    KEYCLOAK_URL="http://localhost:8080"
 fi
 
 export TF_STATE=/Users/ravipanchal/learn/vault/confused-deputy-aws/terraform/terraform.tfstate
 
+# --- Auth Provider Configuration ---
+if [ "$AUTH_PROVIDER" = "keycloak" ]; then
+    # Keycloak configuration
+    TENANT_ID=""
+    CLIENT_ID=$(terraform output -state=$TF_STATE -raw keycloak_products_web_client_id 2>/dev/null || echo "products-web")
+    CLIENT_SECRET=""
+    SCOPE="openid profile email $(terraform output -state=$TF_STATE -json keycloak_products_agent_scopes 2>/dev/null | jq '. | join(" ")' -r)"
+    BASE_URL="${KEYCLOAK_URL}/realms/$(terraform output -state=$TF_STATE -raw keycloak_realm_name 2>/dev/null || echo "confused-deputy-realm")"
+    
+    JWKS_URI=$(terraform output -state=$TF_STATE -raw keycloak_jwks_uri 2>/dev/null || echo "${KEYCLOAK_URL}/realms/confused-deputy-realm/protocol/openid-connect/certs")
+    JWT_ISSUER=$(terraform output -state=$TF_STATE -raw keycloak_oidc_issuer_url 2>/dev/null || echo "${KEYCLOAK_URL}/realms/confused-deputy-realm")
+    TOKEN_URL=$(terraform output -state=$TF_STATE -raw keycloak_token_endpoint 2>/dev/null || echo "${KEYCLOAK_URL}/realms/confused-deputy-realm/protocol/openid-connect/token")
+    
+    PRODUCTS_AGENT_CLIENT_ID=$(terraform output -state=$TF_STATE -raw keycloak_products_agent_client_id 2>/dev/null || echo "products-agent")
+    PRODUCTS_AGENT_CLIENT_SECRET=$(terraform output -state=$TF_STATE -raw keycloak_products_agent_client_secret 2>/dev/null || echo "")
+    PRODUCTS_AGENT_AUDIENCE=$(terraform output -state=$TF_STATE -raw keycloak_products_agent_client_id 2>/dev/null || echo "products-agent")
+    PRODUCTS_AGENT_SCOPE=$(terraform output -state=$TF_STATE -json keycloak_products_mcp_scopes 2>/dev/null | jq '. | join(" ")' -r)
+    
+    PRODUCTS_MCP_AUDIENCE=$(terraform output -state=$TF_STATE -raw keycloak_products_mcp_client_id 2>/dev/null || echo "products-mcp")
+else
+    # Microsoft Entra ID configuration
+    TENANT_ID=0aa96723-98b3-4842-9673-73bafaafde70
+    CLIENT_ID=$(terraform output -state=$TF_STATE -raw products_web_client_id)
+    CLIENT_SECRET=$(terraform output -state=$TF_STATE -raw products_web_client_secret)
+    SCOPE="openid profile email $(terraform output -state=$TF_STATE -json products_agent_scopes | jq '. | join(" ")' -r)"
+    BASE_URL=https://login.microsoftonline.com
+    
+    JWKS_URI=https://login.windows.net/common/discovery/keys
+    JWT_ISSUER=https://login.microsoftonline.com/0aa96723-98b3-4842-9673-73bafaafde70/v2.0
+    TOKEN_URL=https://login.microsoftonline.com/0aa96723-98b3-4842-9673-73bafaafde70/oauth2/v2.0/token
+    
+    PRODUCTS_AGENT_CLIENT_ID=$(terraform output -state=$TF_STATE -raw products_agent_client_id)
+    PRODUCTS_AGENT_CLIENT_SECRET=$(terraform output -state=$TF_STATE -raw products_agent_client_secret)
+    PRODUCTS_AGENT_AUDIENCE=$(terraform output -state=$TF_STATE -raw products_agent_client_id)
+    PRODUCTS_AGENT_SCOPE=$(terraform output -state=$TF_STATE -json products_mcp_scopes | jq '. | join(" ")' -r)
+    
+    PRODUCTS_MCP_AUDIENCE=$(terraform output -state=$TF_STATE -raw products_mcp_client_id)
+fi
+
 cat > $ROOT_PATH/products-web/$ENV_FILE_NAME <<EOF
-TENANT_ID=0aa96723-98b3-4842-9673-73bafaafde70
-CLIENT_ID=$(terraform output -state=$TF_STATE -raw products_web_client_id)
-CLIENT_SECRET=$(terraform output -state=$TF_STATE -raw products_web_client_secret)
-SCOPE="openid profile email $(terraform output -state=$TF_STATE -json products_agent_scopes | jq '. | join(" ")' -r)"
+TENANT_ID=${TENANT_ID}
+CLIENT_ID=${CLIENT_ID}
+CLIENT_SECRET=${CLIENT_SECRET}
+SCOPE="${SCOPE}"
 REDIRECT_URI=${REDIRECT_URI}
-BASE_URL=https://login.microsoftonline.com
+BASE_URL=${BASE_URL}
 PRODUCTS_AGENT_URL=${PRODUCTS_AGENT_URL}
 LOG_LEVEL=info
 EOF
 
 cat > $ROOT_PATH/products-agent/$ENV_FILE_NAME <<EOF
-JWKS_URI=https://login.windows.net/common/discovery/keys
-JWT_ISSUER=https://login.microsoftonline.com/0aa96723-98b3-4842-9673-73bafaafde70/v2.0
-JWT_AUDIENCE=$(terraform output -state=$TF_STATE -raw products_agent_client_id)
+JWKS_URI=${JWKS_URI}
+JWT_ISSUER=${JWT_ISSUER}
+JWT_AUDIENCE=${PRODUCTS_AGENT_AUDIENCE}
 
-# Microsoft Entra ID OAuth On-Behalf-Of Flow Configuration
-ENTRA_CLIENT_ID=$(terraform output -state=$TF_STATE -raw products_agent_client_id)
-ENTRA_CLIENT_SECRET=$(terraform output -state=$TF_STATE -raw products_agent_client_secret)
-ENTRA_SCOPE="$(terraform output -state=$TF_STATE -json products_mcp_scopes | jq '. | join(" ")' -r)"
-ENTRA_TOKEN_URL=https://login.microsoftonline.com/0aa96723-98b3-4842-9673-73bafaafde70/oauth2/v2.0/token
+# OAuth On-Behalf-Of Flow Configuration
+ENTRA_CLIENT_ID=${PRODUCTS_AGENT_CLIENT_ID}
+ENTRA_CLIENT_SECRET=${PRODUCTS_AGENT_CLIENT_SECRET}
+ENTRA_SCOPE="${PRODUCTS_AGENT_SCOPE}"
+ENTRA_TOKEN_URL=${TOKEN_URL}
 
 # Bedrock LLM configuration
 BEDROCK_MODEL_ID=amazon.nova-pro-v1:0
@@ -98,9 +150,9 @@ SERVER_NAME=products-mcp
 # Application Settings
 MAX_RESULTS=100
 
-JWKS_URI=https://login.windows.net/common/discovery/keys
-JWT_ISSUER=https://login.microsoftonline.com/0aa96723-98b3-4842-9673-73bafaafde70/v2.0
-JWT_AUDIENCE=$(terraform output -state=$TF_STATE -raw products_mcp_client_id)
+JWKS_URI=${JWKS_URI}
+JWT_ISSUER=${JWT_ISSUER}
+JWT_AUDIENCE=${PRODUCTS_MCP_AUDIENCE}
 VAULT_ADDR=${VAULT_ADDR}
 LOG_LEVEL=info
 EOF

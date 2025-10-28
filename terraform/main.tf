@@ -89,6 +89,15 @@ module "azure_ad_app" {
   ad_user_password = var.ad_user_password
 }
 
+# Module 5b: Keycloak Authentication (Alternative to Azure AD)
+module "keycloak" {
+  source = "./modules/keycloak"
+  
+  keycloak_url   = var.keycloak_url
+  user_password  = var.ad_user_password
+  alb_https_url  = module.bastion.alb_https_url
+}
+
 # Module 6: Vault Authentication and Database Configuration
 module "vault_auth" {
   source = "./modules/vault-auth"

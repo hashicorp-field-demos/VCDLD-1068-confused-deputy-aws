@@ -33,5 +33,9 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 3.0"
     }
+    keycloak = {
+      source  = "mrparkers/keycloak"
+      version = "~> 4.0"
+    }
   }
 }

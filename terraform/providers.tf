@@ -51,3 +51,11 @@ provider "azurerm" {
   client_id     = var.azure_client_id
   client_secret = var.azure_client_secret
 }
+
+# Keycloak provider for authentication and authorization
+provider "keycloak" {
+  client_id = var.keycloak_admin_username
+  username  = var.keycloak_admin_username
+  password  = var.keycloak_admin_password
+  url       = var.keycloak_url
+}

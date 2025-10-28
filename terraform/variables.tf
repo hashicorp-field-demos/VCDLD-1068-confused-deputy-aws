@@ -242,3 +242,23 @@ variable "ad_user_password" {
   type        = string
   sensitive   = true
 }
+
+# Keycloak provider variables
+variable "keycloak_url" {
+  description = "The base URL of the Keycloak server"
+  type        = string
+  default     = "http://localhost:8080"
+}
+
+variable "keycloak_admin_username" {
+  description = "The Keycloak admin username"
+  type        = string
+  default     = "admin"
+}
+
+variable "keycloak_admin_password" {
+  description = "The Keycloak admin password"
+  type        = string
+  default     = "admin"
+  sensitive   = true
+}

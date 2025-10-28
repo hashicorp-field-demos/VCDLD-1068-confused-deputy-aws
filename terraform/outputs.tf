@@ -229,3 +229,76 @@ output "alb_https_url" {
   description = "HTTPS URL for the Application Load Balancer"
   value       = module.bastion.alb_https_url
 }
+
+# Keycloak outputs (alternative authentication provider)
+output "keycloak_realm_name" {
+  description = "Name of the Keycloak realm"
+  value       = module.keycloak.realm_name
+}
+
+output "keycloak_products_mcp_client_id" {
+  description = "Client ID for Products MCP in Keycloak"
+  value       = module.keycloak.products_mcp_client_id
+}
+
+output "keycloak_products_mcp_client_secret" {
+  description = "Client secret for Products MCP in Keycloak"
+  value       = module.keycloak.products_mcp_client_secret
+  sensitive   = true
+}
+
+output "keycloak_products_agent_client_id" {
+  description = "Client ID for Products Agent in Keycloak"
+  value       = module.keycloak.products_agent_client_id
+}
+
+output "keycloak_products_agent_client_secret" {
+  description = "Client secret for Products Agent in Keycloak"
+  value       = module.keycloak.products_agent_client_secret
+  sensitive   = true
+}
+
+output "keycloak_products_web_client_id" {
+  description = "Client ID for Products Web in Keycloak"
+  value       = module.keycloak.products_web_client_id
+}
+
+output "keycloak_oidc_issuer_url" {
+  description = "Keycloak OIDC issuer URL"
+  value       = module.keycloak.oidc_issuer_url
+}
+
+output "keycloak_oidc_discovery_url" {
+  description = "Keycloak OIDC discovery URL"
+  value       = module.keycloak.oidc_discovery_url
+}
+
+output "keycloak_jwks_uri" {
+  description = "Keycloak JWKS URI"
+  value       = module.keycloak.jwks_uri
+}
+
+output "keycloak_token_endpoint" {
+  description = "Keycloak token endpoint"
+  value       = module.keycloak.token_endpoint
+}
+
+output "keycloak_products_mcp_scopes" {
+  description = "Products MCP scopes in Keycloak"
+  value       = module.keycloak.products_mcp_scopes
+}
+
+output "keycloak_products_agent_scopes" {
+  description = "Products Agent scopes in Keycloak"
+  value       = module.keycloak.products_agent_scopes
+}
+
+output "keycloak_dbread_group_id" {
+  description = "Keycloak dbread group ID"
+  value       = module.keycloak.dbread_group_id
+}
+
+output "keycloak_dbadmin_group_id" {
+  description = "Keycloak dbadmin group ID"
+  value       = module.keycloak.dbadmin_group_id
+}
