@@ -1,6 +1,6 @@
 # Secure Agentic Infrastructure with Terraform
 
-This Terraform configuration deploys a comprehensive secure infrastructure for running agentic AI applications with end-to-end authentication, authorization, and zero-trust architecture principles. The infrastructure integrates HashiCorp Cloud Platform (HCP) Vault, AWS services, Microsoft Entra ID, and AWS Bedrock to create a production-ready environment for secure AI workloads.
+This Terraform configuration deploys a comprehensive secure infrastructure for running agentic AI applications with end-to-end authentication, authorization, and zero-trust architecture principles. The infrastructure integrates HashiCorp Cloud Platform (HCP) Vault, AWS services, Keycloak or Microsoft Entra ID, and AWS Bedrock to create a production-ready environment for secure AI workloads.
 
 ## Architecture Overview
 
@@ -10,8 +10,38 @@ The infrastructure consists of six main components that work together to provide
 2. **AWS Networking**: VPC with public/private subnets and secure connectivity to HCP
 3. **AWS DocumentDB**: MongoDB-compatible database for application data storage
 4. **Bastion Host**: Secure access point with application deployment and management tools
-5. **Microsoft Entra ID Applications**: OAuth/JWT authentication and authorization
-6. **Vault Authentication**: JWT-based authentication bridge between Entra ID and Vault
+5. **Keycloak or Microsoft Entra ID**: OAuth/JWT authentication and authorization
+6. **Vault Authentication**: JWT-based authentication bridge between identity provider and Vault
+
+## Authentication Provider Options
+
+This infrastructure supports two authentication providers:
+
+### Option 1: Keycloak (Recommended for Development)
+
+**Advantages:**
+- ✅ No cloud dependencies
+- ✅ Runs locally or in Docker
+- ✅ Fully automated Terraform configuration
+- ✅ Free and open-source
+
+**Setup:**
+The Keycloak module (`terraform/modules/keycloak`) automatically creates:
+- Realm: `confused-deputy-realm`
+- Users: alice (readonly) and bob (admin)
+- Groups: dbread and dbadmin
+- Clients: products-web, products-agent, products-mcp
+- Token exchange configuration
+
+### Option 2: Microsoft Entra ID (Enterprise)
+
+**Advantages:**
+- 🔷 Enterprise SSO integration
+- 🔷 Azure AD group sync
+- 🔷 Conditional access policies
+
+**Setup:**
+Requires Azure AD tenant and service principal configuration (see prerequisites below).
 
 ## Prerequisites
 
