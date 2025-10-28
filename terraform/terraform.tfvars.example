@@ -17,12 +17,32 @@ docdb_instance_count     = 1
 # Bastion Host Configuration  
 bastion_instance_type = "t3.medium"
 
-# JWT Auth Configuration
-jwt_oidc_discovery_url = "https://your-oidc-provider.com/.well-known/openid_configuration"
-jwt_bound_issuer="https://login.microsoftonline.com/<tenant-id>/v2.0
+# ========================================
+# Authentication Provider Configuration
+# Choose ONE of the following:
+# ========================================
 
-# AzureAD service principal configuration
-azure_client_id="your-azure-service-principal-client-id"
-azure_client_secret="your-azure-service-principal-client-secret"
-azure_tenant_id="your-azure-tenant-id"
-ad_user_password="password-for-test-users!"
+# Option 1: Keycloak (Default, Recommended for Development)
+# ---------------------------------------------------------
+# Keycloak configuration - uses local or containerized Keycloak
+keycloak_url           = "http://localhost:8080"  # Change to your Keycloak URL
+keycloak_admin_username = "admin"
+keycloak_admin_password = "admin"
+ad_user_password       = "password"  # Password for alice and bob test users
+
+# For Keycloak, uncomment vault_auth_keycloak module in main.tf
+# and comment out the vault_auth module
+
+# Option 2: Microsoft Entra ID (Enterprise)
+# ---------------------------------------------------------
+# JWT Auth Configuration (for Entra ID)
+# jwt_oidc_discovery_url = "https://login.microsoftonline.com/<tenant-id>/v2.0/.well-known/openid-configuration"
+# jwt_bound_issuer       = "https://login.microsoftonline.com/<tenant-id>/v2.0"
+
+# AzureAD service principal configuration (for Entra ID)
+# azure_client_id     = "your-azure-service-principal-client-id"
+# azure_client_secret = "your-azure-service-principal-client-secret"
+# azure_tenant_id     = "your-azure-tenant-id"
+# ad_user_password    = "password-for-test-users!"
+
+# For Entra ID, use the default vault_auth module in main.tf
