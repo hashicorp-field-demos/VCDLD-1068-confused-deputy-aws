@@ -115,152 +115,48 @@ output "ssh_connection_command" {
 #   value       = module.bastion.readwrite_group_id
 # }
 
-# Products MCP Application outputs (primary)
+# Products Application outputs (Keycloak-based)
 
 output "products_mcp_client_id" {
-  description = "The client ID of the Products MCP Azure AD application"
-  value       = module.azure_ad_app.products_mcp_client_id
+  description = "The client ID of the Products MCP Keycloak application"
+  value       = module.keycloak.products_mcp_client_id
 }
 
 output "products_agent_client_id" {
-  description = "The client ID of the Products Agent Azure AD application"
-  value       = module.azure_ad_app.products_agent_client_id
+  description = "The client ID of the Products Agent Keycloak application"
+  value       = module.keycloak.products_agent_client_id
 }
 
 output "products_agent_client_secret" {
-  description = "The client secret of the Products Agent Azure AD application"
-  value       = module.azure_ad_app.products_agent_client_secret
+  description = "The client secret of the Products Agent Keycloak application"
+  value       = module.keycloak.products_agent_client_secret
   sensitive   = true
 }
 
 output "products_web_client_id" {
-  description = "The client ID of the Products Web Azure AD application"
-  value       = module.azure_ad_app.products_web_client_id
-}
-
-output "products_web_client_secret" {
-  description = "The client secret of the Products Web Azure AD application"
-  value       = module.azure_ad_app.products_web_client_secret
-  sensitive   = true
+  description = "The client ID of the Products Web Keycloak application"
+  value       = module.keycloak.products_web_client_id
 }
 
 output "products_mcp_scopes" {
-  description = "The OAuth2 permission scopes of the Products MCP Azure AD application"
-  value       = module.azure_ad_app.products_mcp_scopes
+  description = "The OAuth2 permission scopes of the Products MCP Keycloak application"
+  value       = module.keycloak.products_mcp_scopes
 }
 
 output "products_agent_scopes" {
-  description = "The OAuth2 permission scopes of the Products Agent Azure AD application"
-  value       = module.azure_ad_app.products_agent_scopes
+  description = "The OAuth2 permission scopes of the Products Agent Keycloak application"
+  value       = module.keycloak.products_agent_scopes
 }
-
-# output "identifier_uris" {
-#   description = "The identifier URIs of the Products MCP, Agent, and Web Azure AD applications"
-#   value = {
-#     mcp   = module.azure_ad_app.products_mcp_identifier_uri
-#     agent = module.azure_ad_app.products_agent_identifier_uri
-#     web   = module.azure_ad_app.products_web_identifier_uri
-#   }
-# }
-
-# EKS outputs
-# output "eks_cluster_name" {
-#   description = "Name of the EKS cluster"
-#   value       = module.aws_eks.cluster_name
-# }
-
-# output "eks_cluster_endpoint" {
-#   description = "Endpoint for EKS control plane"
-#   value       = module.aws_eks.cluster_endpoint
-# }
-
-# output "eks_cluster_version" {
-#   description = "The Kubernetes server version for the EKS cluster"
-#   value       = module.aws_eks.cluster_version
-# }
-
-# output "eks_cluster_status" {
-#   description = "Status of the EKS cluster"
-#   value       = module.aws_eks.cluster_status
-# }
-
-# output "eks_node_group_name" {
-#   description = "Name of the EKS Node Group"
-#   value       = module.aws_eks.node_group_name
-# }
-
-# output "eks_node_group_status" {
-#   description = "Status of the EKS Node Group"
-#   value       = module.aws_eks.node_group_status
-# }
-
-# output "eks_kubeconfig_path" {
-#   description = "Path to the generated kubeconfig file"
-#   value       = module.aws_eks.kubeconfig_path
-# }
-
-# output "eks_kubectl_command" {
-#   description = "Command to use kubectl with the generated kubeconfig"
-#   value       = module.aws_eks.kubectl_command
-# }
-
-# # ALB and TLS Certificate Outputs
-# output "alb_dns_name" {
-#   description = "DNS name of the Application Load Balancer"
-#   value       = module.bastion.alb_dns_name
-# }
-
-# output "alb_zone_id" {
-#   description = "Hosted zone ID of the Application Load Balancer"
-#   value       = module.bastion.alb_zone_id
-# }
-
-# output "alb_arn" {
-#   description = "ARN of the Application Load Balancer"
-#   value       = module.bastion.alb_arn
-# }
-
-# output "certificate_arn" {
-#   description = "ARN of the ACM certificate"
-#   value       = module.bastion.certificate_arn
-# }
 
 output "alb_https_url" {
   description = "HTTPS URL for the Application Load Balancer"
   value       = module.bastion.alb_https_url
 }
 
-# Keycloak outputs (alternative authentication provider)
+# Keycloak outputs
 output "keycloak_realm_name" {
   description = "Name of the Keycloak realm"
   value       = module.keycloak.realm_name
-}
-
-output "keycloak_products_mcp_client_id" {
-  description = "Client ID for Products MCP in Keycloak"
-  value       = module.keycloak.products_mcp_client_id
-}
-
-output "keycloak_products_mcp_client_secret" {
-  description = "Client secret for Products MCP in Keycloak"
-  value       = module.keycloak.products_mcp_client_secret
-  sensitive   = true
-}
-
-output "keycloak_products_agent_client_id" {
-  description = "Client ID for Products Agent in Keycloak"
-  value       = module.keycloak.products_agent_client_id
-}
-
-output "keycloak_products_agent_client_secret" {
-  description = "Client secret for Products Agent in Keycloak"
-  value       = module.keycloak.products_agent_client_secret
-  sensitive   = true
-}
-
-output "keycloak_products_web_client_id" {
-  description = "Client ID for Products Web in Keycloak"
-  value       = module.keycloak.products_web_client_id
 }
 
 output "keycloak_oidc_issuer_url" {
@@ -281,24 +177,4 @@ output "keycloak_jwks_uri" {
 output "keycloak_token_endpoint" {
   description = "Keycloak token endpoint"
   value       = module.keycloak.token_endpoint
-}
-
-output "keycloak_products_mcp_scopes" {
-  description = "Products MCP scopes in Keycloak"
-  value       = module.keycloak.products_mcp_scopes
-}
-
-output "keycloak_products_agent_scopes" {
-  description = "Products Agent scopes in Keycloak"
-  value       = module.keycloak.products_agent_scopes
-}
-
-output "keycloak_dbread_group_id" {
-  description = "Keycloak dbread group ID"
-  value       = module.keycloak.dbread_group_id
-}
-
-output "keycloak_dbadmin_group_id" {
-  description = "Keycloak dbadmin group ID"
-  value       = module.keycloak.dbadmin_group_id
 }

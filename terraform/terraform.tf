@@ -25,14 +25,6 @@ terraform {
       source  = "hashicorp/vault"
       version = "5.1.0"
     }
-    azuread = {
-      source  = "hashicorp/azuread"
-      version = "~> 3.5.0"
-    }
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
-    }
     keycloak = {
       source  = "mrparkers/keycloak"
       version = "~> 4.0"

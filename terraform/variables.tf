@@ -135,110 +135,9 @@ variable "hcp_client_secret" {
   type        = string
 }
 
-# JWT Auth variables
-variable "jwt_oidc_discovery_url" {
-  description = "OIDC Discovery URL for JWT auth"
-  type        = string
-}
-
-variable "jwt_bound_issuer" {
-  description = "OIDC Bound Issuer for JWT auth"
-  type        = string
-}
-
-# variable "readonly_group_alias_name" {
-#   description = "Name for the readonly identity group alias"
-#   type        = string
-#   default     = "readonly-group"
-# }
-
-# variable "readwrite_group_alias_name" {
-#   description = "Name for the readwrite identity group alias"
-#   type        = string
-#   default     = "readwrite-group"
-# }
-
-# Azure AD provider variables
-variable "azure_tenant_id" {
-  description = "The Azure AD tenant ID"
-  type        = string
-}
-
-variable "azure_client_id" {
-  description = "The Azure AD client ID for Terraform provider authentication"
-  type        = string
-}
-
-variable "azure_client_secret" {
-  description = "The Azure AD client secret for Terraform provider authentication"
-  type        = string
-  sensitive   = true
-}
-
-# variable "azure_subscription_id" {
-#   description = "The Azure subscription ID"
-#   type        = string
-# }
-
-# EKS variables
-variable "eks_kubernetes_version" {
-  description = "Kubernetes version for the EKS cluster"
-  type        = string
-  default     = "1.30"
-}
-
-variable "eks_public_access_cidrs" {
-  description = "List of CIDR blocks that can access the EKS cluster API publicly"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
-}
-
-variable "eks_cluster_log_types" {
-  description = "List of control plane log types to enable for EKS cluster"
-  type        = list(string)
-  default     = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
-}
-
-# EKS Node Group variables
-variable "eks_node_group_capacity_type" {
-  description = "Type of capacity associated with the EKS Node Group. Valid values: ON_DEMAND, SPOT"
-  type        = string
-  default     = "ON_DEMAND"
-}
-
-variable "eks_node_group_instance_types" {
-  description = "List of instance types associated with the EKS Node Group"
-  type        = list(string)
-  default     = ["m5.large"]
-}
-
-variable "eks_node_group_desired_size" {
-  description = "Desired number of worker nodes"
-  type        = number
-  default     = 2
-}
-
-variable "eks_node_group_max_size" {
-  description = "Maximum number of worker nodes"
-  type        = number
-  default     = 3
-}
-
-variable "eks_node_group_min_size" {
-  description = "Minimum number of worker nodes"
-  type        = number
-  default     = 2
-}
-
-
-variable "eks_kubeconfig_path" {
-  description = "Path where kubeconfig file will be saved locally"
-  type        = string
-  default     = "./kubeconfig"
-}
-
-variable "ad_user_password" {
-  description = "Password for Azure AD users"
+# User password variable
+variable "user_password" {
+  description = "Password for Keycloak test users (alice, bob)"
   type        = string
   sensitive   = true
 }
@@ -262,3 +161,4 @@ variable "keycloak_admin_password" {
   default     = "admin"
   sensitive   = true
 }
+

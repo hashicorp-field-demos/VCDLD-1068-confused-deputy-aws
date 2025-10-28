@@ -37,21 +37,6 @@ provider "vault" {
   namespace = "admin"
 }
 
-# Azure AD provider for managing Azure Active Directory resources
-provider "azuread" {
-  tenant_id     = var.azure_tenant_id
-  client_id     = var.azure_client_id
-  client_secret = var.azure_client_secret
-}
-
-# Azure Resource Manager provider (if needed for Azure resources)
-provider "azurerm" {
-  features {}
-  tenant_id     = var.azure_tenant_id
-  client_id     = var.azure_client_id
-  client_secret = var.azure_client_secret
-}
-
 # Keycloak provider for authentication and authorization
 provider "keycloak" {
   client_id = var.keycloak_admin_username

@@ -72,7 +72,7 @@ PRODUCTS_AGENT_SCOPE=$(terraform output -state=$TF_STATE -json products_mcp_scop
 
 PRODUCTS_MCP_AUDIENCE=$(terraform output -state=$TF_STATE -raw products_mcp_client_id 2>/dev/null || echo "products-mcp")
 
-cat > $ROOT_PATH/products-web/$ENV_FILE_NAME <<WEBEOF
+cat > $ROOT_PATH/products-web/$ENV_FILE_NAME <<EOF
 TENANT_ID=${TENANT_ID}
 CLIENT_ID=${CLIENT_ID}
 CLIENT_SECRET=${CLIENT_SECRET}
@@ -81,69 +81,3 @@ REDIRECT_URI=${REDIRECT_URI}
 BASE_URL=${BASE_URL}
 PRODUCTS_AGENT_URL=${PRODUCTS_AGENT_URL}
 LOG_LEVEL=info
-WEBEOF
-
-cat > $ROOT_PATH/products-agent/$ENV_FILE_NAME <<AGENTEOF
-JWKS_URI=${JWKS_URI}
-JWT_ISSUER=${JWT_ISSUER}
-JWT_AUDIENCE=${PRODUCTS_AGENT_AUDIENCE}
-
-# Keycloak OAuth Token Exchange Configuration
-ENTRA_CLIENT_ID=${PRODUCTS_AGENT_CLIENT_ID}
-ENTRA_CLIENT_SECRET=${PRODUCTS_AGENT_CLIENT_SECRET}
-ENTRA_SCOPE="${PRODUCTS_AGENT_SCOPE}"
-ENTRA_TOKEN_URL=${TOKEN_URL}
-
-# Bedrock LLM configuration
-BEDROCK_MODEL_ID=amazon.nova-pro-v1:0
-BEDROCK_REGION=us-east-1
-
-# MCP Server Configuration
-PRODUCTS_MCP_SERVER_URL=${PRODUCTS_MCP_SERVER_URL}
-
-LOG_LEVEL=info
-AGENTEOF
-
-cat > $ROOT_PATH/products-mcp/$ENV_FILE_NAME <<MCPEOF
-# AWS DocumentDB Configuration
-DB_HOST=${DB_HOST}
-DB_PORT=27017
-DB_NAME=test
-COLLECTION_NAME=products
-
-# MCP Server Configuration
-SERVER_HOST=0.0.0.0
-SERVER_PORT=8000
-SERVER_NAME=products-mcp
-
-# Application Settings
-MAX_RESULTS=100
-
-JWKS_URI=${JWKS_URI}
-JWT_ISSUER=${JWT_ISSUER}
-JWT_AUDIENCE=${PRODUCTS_MCP_AUDIENCE}
-VAULT_ADDR=${VAULT_ADDR}
-LOG_LEVEL=info
-MCPEOF
-
-if [ "$ENV_TYPE" = "docker" ]; then
-    AWS_CREDS_FILE="$HOME/.aws/credentials"
-    AGENT_ENV_FILE="$ROOT_PATH/products-agent/.env.local"
-    if [ -f "$AWS_CREDS_FILE" ]; then
-        ACCESS_KEY=$(awk '/\[default\]/{f=1;next}/\[/{f=0}f && $1=="aws_access_key_id"{print $3}' "$AWS_CREDS_FILE")
-        SECRET_KEY=$(awk '/\[default\]/{f=1;next}/\[/{f=0}f && $1=="aws_secret_access_key"{print $3}' "$AWS_CREDS_FILE")
-        SESSION_TOKEN=$(awk '/\[default\]/{f=1;next}/\[/{f=0}f && $1=="aws_session_token"{print $3}' "$AWS_CREDS_FILE")
-        {
-            echo "AWS_ACCESS_KEY_ID=$ACCESS_KEY"
-            echo "AWS_SECRET_ACCESS_KEY=$SECRET_KEY"
-            if [ -n "$SESSION_TOKEN" ]; then
-                echo "AWS_SESSION_TOKEN=$SESSION_TOKEN"
-            fi
-        } >> "$AGENT_ENV_FILE"
-        echo "Appended AWS credentials to $AGENT_ENV_FILE."
-    else
-        echo "Warning: $AWS_CREDS_FILE not found. AWS credentials not added to $AGENT_ENV_FILE."
-    fi
-fi
-
-echo "Successfully generated $ENV_FILE_NAME files in $ROOT_PATH."

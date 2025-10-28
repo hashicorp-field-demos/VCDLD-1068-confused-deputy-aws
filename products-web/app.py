@@ -28,7 +28,7 @@ logger.setLevel(logging.getLevelNamesMapping().get(LOG_LEVEL))
 
 # Configuration
 st.set_page_config(
-    page_title="OAuth & ProductsAgent Chat",
+    page_title="Keycloak OAuth & ProductsAgent Chat",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -143,27 +143,16 @@ CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
 TENANT_ID = os.environ.get("TENANT_ID")
 SCOPE = os.environ.get("SCOPE", "openid profile email User.Read")
 REDIRECT_URI = os.environ.get("REDIRECT_URI", "http://localhost:8501/oauth2callback")
-BASE_URL = os.environ.get("BASE_URL", "https://login.microsoftonline.com")
+BASE_URL = os.environ.get("BASE_URL", "http://localhost:8080/realms/confused-deputy-realm")
 PRODUCTS_AGENT_URL = os.environ.get("PRODUCTS_AGENT_URL", "http://localhost:8000")
 
-# Construct OAuth URLs dynamically from base URL and tenant ID
+# Construct Keycloak OAuth URLs from BASE_URL
+# BASE_URL should be in format: http://localhost:8080/realms/{realm-name}
 if BASE_URL:
-    # Detect authentication provider based on BASE_URL
-    if "realms" in BASE_URL.lower() or "keycloak" in BASE_URL.lower():
-        # Keycloak URLs - BASE_URL should be: http://localhost:8080/realms/{realm-name}
-        AUTHORIZE_URL = f"{BASE_URL}/protocol/openid-connect/auth"
-        TOKEN_URL = f"{BASE_URL}/protocol/openid-connect/token"
-        REFRESH_TOKEN_URL = f"{BASE_URL}/protocol/openid-connect/token"
-        REVOKE_TOKEN_URL = f"{BASE_URL}/protocol/openid-connect/revoke"
-    elif TENANT_ID:
-        # Microsoft Entra ID URLs
-        AUTHORIZE_URL = f"{BASE_URL}/{TENANT_ID}/oauth2/v2.0/authorize"
-        TOKEN_URL = f"{BASE_URL}/{TENANT_ID}/oauth2/v2.0/token"
-        REFRESH_TOKEN_URL = f"{BASE_URL}/{TENANT_ID}/oauth2/v2.0/token"
-        # Microsoft Entra ID doesn't have a standard token revocation endpoint
-        REVOKE_TOKEN_URL = None
-    else:
-        AUTHORIZE_URL = TOKEN_URL = REFRESH_TOKEN_URL = REVOKE_TOKEN_URL = None
+    AUTHORIZE_URL = f"{BASE_URL}/protocol/openid-connect/auth"
+    TOKEN_URL = f"{BASE_URL}/protocol/openid-connect/token"
+    REFRESH_TOKEN_URL = f"{BASE_URL}/protocol/openid-connect/token"
+    REVOKE_TOKEN_URL = f"{BASE_URL}/protocol/openid-connect/revoke"
 else:
     AUTHORIZE_URL = TOKEN_URL = REFRESH_TOKEN_URL = REVOKE_TOKEN_URL = None
 
@@ -580,16 +569,12 @@ def main():
     if "token" not in st.session_state:
         st.header("🚪 Authentication Required")
         
-        # Detect auth provider for display
-        auth_provider = "Keycloak" if "realms" in BASE_URL.lower() or "keycloak" in BASE_URL.lower() else "Microsoft Entra ID"
-        
         st.write(
-            f"Please authenticate with {auth_provider} to access the ProductsAgent chat."
+            "Please authenticate with Keycloak to access the ProductsAgent chat."
         )
 
         with st.expander("ℹ️ Configuration Details", expanded=False):
             st.write(f"**Client ID:** {CLIENT_ID}")
-            st.write(f"**Tenant ID:** {TENANT_ID}")
             st.write(f"**Base URL:** {BASE_URL}")
             st.write(f"**Scopes:** {SCOPE}")
             st.write(f"**Products API:** {PRODUCTS_AGENT_URL}")
@@ -605,9 +590,8 @@ def main():
         )
 
         # Authorization button
-        auth_button_text = "Login with Keycloak" if "keycloak" in auth_provider.lower() else "Login with Microsoft"
         result = oauth2.authorize_button(
-            auth_button_text,
+            "Login with Keycloak",
             REDIRECT_URI,
             SCOPE,
             height=600,
