@@ -25,6 +25,24 @@ Before migrating, ensure you have:
 2. **Terraform** (already installed)
 3. **Access to existing deployment** (to backup configuration)
 
+## ⚠️ Security Considerations
+
+**For Development/Testing:**
+- Default credentials (admin/admin, password) are acceptable
+- HTTP connections are acceptable for localhost
+
+**For Production Deployments:**
+- ❌ **NEVER** use default credentials
+- ✅ Use strong, unique passwords for all accounts
+- ✅ Enable HTTPS/TLS for Keycloak
+- ✅ Configure Keycloak password policies
+- ✅ Enable audit logging
+- ✅ Restrict network access to Keycloak
+- ✅ Regular security updates and backups
+- ✅ Consider using external secrets management (e.g., Vault) for credentials
+
+**This guide uses development credentials for simplicity. Always follow security best practices for production.**
+
 ## Migration Steps
 
 ### Step 1: Backup Current Configuration
@@ -92,8 +110,8 @@ Edit `terraform/terraform.tfvars`:
 # Add Keycloak configuration
 keycloak_url            = "http://localhost:8080"
 keycloak_admin_username = "admin"
-keycloak_admin_password = "admin"
-ad_user_password        = "password"  # For test users alice and bob
+keycloak_admin_password = "admin"  # ⚠️ CHANGE FOR PRODUCTION!
+ad_user_password        = "password"  # ⚠️ CHANGE FOR PRODUCTION! Password for test users alice and bob
 
 # Comment out or remove Entra ID configuration
 # azure_client_id     = "..."
@@ -102,6 +120,13 @@ ad_user_password        = "password"  # For test users alice and bob
 # jwt_oidc_discovery_url = "..."
 # jwt_bound_issuer       = "..."
 ```
+
+> **⚠️ Security Warning**: The default credentials shown above are for development/testing only. 
+> For production deployments:
+> - Change Keycloak admin password to a strong, unique password
+> - Use strong passwords for all user accounts
+> - Enable HTTPS for Keycloak
+> - Consider using Keycloak's password policies
 
 ### Step 4: Apply Terraform Changes
 
@@ -171,15 +196,17 @@ docker-compose restart
 
 3. **Test with Alice (readonly)**:
    - Username: `alice`
-   - Password: `password` (or what you configured)
+   - Password: `password` (or the password you configured in terraform.tfvars)
    - Try queries: "Show me all products"
    - Should have read-only access
 
 4. **Test with Bob (admin)**:
    - Username: `bob`
-   - Password: `password` (or what you configured)
+   - Password: `password` (or the password you configured in terraform.tfvars)
    - Try queries: "Create a new product..."
    - Should have full access
+
+> **📝 Note**: For production deployments, always use strong, unique passwords and enable Keycloak's password policies.
 
 ### Step 8: Verify Token Exchange
 
@@ -255,6 +282,8 @@ docker-compose restart keycloak
 ```bash
 curl http://localhost:8080/realms/master
 ```
+
+> **📝 Note**: For production deployments, always use HTTPS instead of HTTP. Configure TLS certificates in Keycloak and update the `keycloak_url` to use `https://`.
 
 ### Issue: Login button shows "Login with Microsoft"
 
