@@ -1,47 +1,35 @@
 # Secure Agentic Infrastructure with Terraform
 
-This Terraform configuration deploys a comprehensive secure infrastructure for running agentic AI applications with end-to-end authentication, authorization, and zero-trust architecture principles. The infrastructure integrates HashiCorp Cloud Platform (HCP) Vault, AWS services, Keycloak or Microsoft Entra ID, and AWS Bedrock to create a production-ready environment for secure AI workloads.
+This Terraform configuration deploys a comprehensive secure infrastructure for running agentic AI applications with end-to-end authentication, authorization, and zero-trust architecture principles. The infrastructure integrates HashiCorp Cloud Platform (HCP) Vault, AWS services, Keycloak, and AWS Bedrock to create a production-ready environment for secure AI workloads.
 
 ## Architecture Overview
 
-The infrastructure consists of six main components that work together to provide a secure, scalable platform:
+The infrastructure consists of five main components that work together to provide a secure, scalable platform:
 
 1. **HCP Vault Cluster**: Centralized secrets management and identity-based authentication
 2. **AWS Networking**: VPC with public/private subnets and secure connectivity to HCP
 3. **AWS DocumentDB**: MongoDB-compatible database for application data storage
 4. **Bastion Host**: Secure access point with application deployment and management tools
-5. **Keycloak or Microsoft Entra ID**: OAuth/JWT authentication and authorization
-6. **Vault Authentication**: JWT-based authentication bridge between identity provider and Vault
+5. **Keycloak**: Open-source OAuth/JWT authentication and authorization
+6. **Vault Authentication**: JWT-based authentication bridge between Keycloak and Vault
 
-## Authentication Provider Options
+## Keycloak Authentication
 
-This infrastructure supports two authentication providers:
+This infrastructure uses Keycloak as the identity provider:
 
-### Option 1: Keycloak (Recommended for Development)
-
-**Advantages:**
-- ✅ No cloud dependencies
-- ✅ Runs locally or in Docker
+**Features:**
+- ✅ No cloud dependencies - runs locally or in Docker
 - ✅ Fully automated Terraform configuration
 - ✅ Free and open-source
+- ✅ Complete control over users and groups
 
-**Setup:**
+**Automated Setup:**
 The Keycloak module (`terraform/modules/keycloak`) automatically creates:
 - Realm: `confused-deputy-realm`
 - Users: alice (readonly) and bob (admin)
 - Groups: dbread and dbadmin
 - Clients: products-web, products-agent, products-mcp
-- Token exchange configuration
-
-### Option 2: Microsoft Entra ID (Enterprise)
-
-**Advantages:**
-- 🔷 Enterprise SSO integration
-- 🔷 Azure AD group sync
-- 🔷 Conditional access policies
-
-**Setup:**
-Requires Azure AD tenant and service principal configuration (see prerequisites below).
+- Token exchange configuration for on-behalf-of flows
 
 ## Prerequisites
 
@@ -77,27 +65,19 @@ export HCP_CLIENT_SECRET="your-hcp-client-secret"
 aws configure
 ```
 
-### 3. Microsoft Entra ID (Azure AD) Configuration
+### 3. Keycloak
 
-- **Azure AD Tenant**: Access to an Azure AD tenant with administrative privileges
-- **Service Principal**: Create a service principal with the following permissions:
-  - **Microsoft Graph API Permissions**:
-    - `Application.ReadWrite.All` (to create and manage app registrations)
-    - `ConsentRequest.ReadWrite.All` (to approve or deny app consent requests and approvals without a signed-in user)
-    - `Domain.Read.All` (to read domain information)
-    - `Group.ReadWrite.All` (to read and write group information)
-    - `User.ReadWrite.All` (and write to reada and write user information)
-    - `Directory.Read.All` (for directory access)
-  - **Azure Active Directory Graph API Permissions**:
-    - `Directory.ReadWrite.All` (legacy permissions for certain operations)
-- **Custom Domain**: Configured custom domain in your Azure AD tenant (required for certain operations)
-- **Admin Consent**: Grant admin consent for the service principal permissions
+- **Keycloak Server**: A running Keycloak instance (provided via Docker Compose)
+- **Admin Access**: Default admin credentials (admin/admin) - change for production!
+
+Keycloak will be configured automatically by Terraform. For local development:
 
 ```bash
-# Set Azure credentials (required for deployment)
-export AZURE_TENANT_ID="your-azure-tenant-id"
-export AZURE_CLIENT_ID="your-azure-service-principal-client-id"
-export AZURE_CLIENT_SECRET="your-azure-service-principal-client-secret"
+# Start Keycloak (in docker-compose directory)
+cd ../docker-compose
+docker-compose up -d keycloak
+
+# Keycloak will be available at http://localhost:8080
 ```
 
 ### 4. AWS Bedrock Configuration
@@ -156,15 +136,11 @@ docdb_instance_count     = 1
 # Bastion Host Configuration  
 bastion_instance_type = "t3.medium"
 
-# JWT Auth Configuration
-jwt_oidc_discovery_url = "https://your-oidc-provider.com/.well-known/openid_configuration"
-jwt_bound_issuer="https://login.microsoftonline.com/<tenant-id>/v2.0
-
-# AzureAD service principal configuration
-azure_client_id="your-azure-service-principal-client-id"
-azure_client_secret="your-azure-service-principal-client-secret"
-azure_tenant_id="your-azure-tenant-id"
-ad_user_password="password-for-test-users!"
+# Keycloak Configuration
+keycloak_url            = "http://localhost:8080"
+keycloak_admin_username = "admin"
+keycloak_admin_password = "admin"
+user_password           = "password"  # For test users alice and bob
 ```
 
 ### 3. Initialize Terraform
@@ -177,8 +153,7 @@ terraform init
 This will download and configure the following providers:
 - `hashicorp/hcp` - For HCP Vault and HVN management
 - `hashicorp/aws` - For AWS resource management
-- `hashicorp/azuread` - For Azure AD application management
-- `hashicorp/azurerm` - For Azure resource management
+- `mrparkers/keycloak` - For Keycloak configuration
 - `hashicorp/vault` - For Vault configuration
 - `hashicorp/tls` - For TLS certificate generation
 - `hashicorp/random` - For random resource naming
@@ -226,17 +201,18 @@ terraform apply
   - Application Load Balancer with SSL certificate
   - Security groups and routing tables
 
-- **Azure AD Resources**:
-  - Application registrations for web and API components
-  - Service principals with required permissions
-  - User groups for role-based access control
-  - Test users with appropriate group memberships
+- **Keycloak Resources**:
+  - Realm configuration (confused-deputy-realm)
+  - Client applications for web and API components
+  - User groups for role-based access control (dbread, dbadmin)
+  - Test users (alice, bob) with appropriate group memberships
+  - Token exchange policies
 
 - **Vault Configuration**:
-  - JWT authentication method configured
+  - JWT authentication method configured for Keycloak
   - Database secrets engine for DocumentDB
   - Policies for different access levels
-  - Identity groups mapped to Azure AD groups
+  - Identity groups mapped to Keycloak groups
 
 ## Infrastructure Teardown
 
@@ -306,7 +282,7 @@ terraform/
     ├── aws-networking/      # VPC, subnets, and connectivity
     ├── aws-documentdb/      # DocumentDB cluster and security
     ├── bastion/            # EC2 bastion with application services
-    ├── azure-ad-app/       # Azure AD applications and users
+    ├── keycloak/           # Keycloak realm and client configuration
     └── vault-auth/         # Vault authentication configuration
 ```
 
@@ -325,4 +301,4 @@ terraform/
 
 ---
 
-**⚠️ Important**: This infrastructure creates billable resources in HCP, AWS, and Azure. Monitor costs and destroy resources when not needed for development/testing purposes.
+**⚠️ Important**: This infrastructure creates billable resources in HCP and AWS. Monitor costs and destroy resources when not needed for development/testing purposes.
