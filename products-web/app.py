@@ -28,7 +28,7 @@ logger.setLevel(logging.getLevelNamesMapping().get(LOG_LEVEL))
 
 # Configuration
 st.set_page_config(
-    page_title="Microsoft Entra ID OAuth & ProductsAgent Chat",
+    page_title="OAuth & ProductsAgent Chat",
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -147,13 +147,23 @@ BASE_URL = os.environ.get("BASE_URL", "https://login.microsoftonline.com")
 PRODUCTS_AGENT_URL = os.environ.get("PRODUCTS_AGENT_URL", "http://localhost:8000")
 
 # Construct OAuth URLs dynamically from base URL and tenant ID
-if TENANT_ID and BASE_URL:
-    # Always construct URLs dynamically - no environment variable overrides
-    AUTHORIZE_URL = f"{BASE_URL}/{TENANT_ID}/oauth2/v2.0/authorize"
-    TOKEN_URL = f"{BASE_URL}/{TENANT_ID}/oauth2/v2.0/token"
-    REFRESH_TOKEN_URL = f"{BASE_URL}/{TENANT_ID}/oauth2/v2.0/token"
-    # Microsoft Entra ID doesn't have a standard token revocation endpoint
-    REVOKE_TOKEN_URL = None
+if BASE_URL:
+    # Detect authentication provider based on BASE_URL
+    if "realms" in BASE_URL.lower() or "keycloak" in BASE_URL.lower():
+        # Keycloak URLs - BASE_URL should be: http://localhost:8080/realms/{realm-name}
+        AUTHORIZE_URL = f"{BASE_URL}/protocol/openid-connect/auth"
+        TOKEN_URL = f"{BASE_URL}/protocol/openid-connect/token"
+        REFRESH_TOKEN_URL = f"{BASE_URL}/protocol/openid-connect/token"
+        REVOKE_TOKEN_URL = f"{BASE_URL}/protocol/openid-connect/revoke"
+    elif TENANT_ID:
+        # Microsoft Entra ID URLs
+        AUTHORIZE_URL = f"{BASE_URL}/{TENANT_ID}/oauth2/v2.0/authorize"
+        TOKEN_URL = f"{BASE_URL}/{TENANT_ID}/oauth2/v2.0/token"
+        REFRESH_TOKEN_URL = f"{BASE_URL}/{TENANT_ID}/oauth2/v2.0/token"
+        # Microsoft Entra ID doesn't have a standard token revocation endpoint
+        REVOKE_TOKEN_URL = None
+    else:
+        AUTHORIZE_URL = TOKEN_URL = REFRESH_TOKEN_URL = REVOKE_TOKEN_URL = None
 else:
     AUTHORIZE_URL = TOKEN_URL = REFRESH_TOKEN_URL = REVOKE_TOKEN_URL = None
 
@@ -569,8 +579,12 @@ def main():
     # Authentication flow
     if "token" not in st.session_state:
         st.header("🚪 Authentication Required")
+        
+        # Detect auth provider for display
+        auth_provider = "Keycloak" if "realms" in BASE_URL.lower() or "keycloak" in BASE_URL.lower() else "Microsoft Entra ID"
+        
         st.write(
-            "Please authenticate with Microsoft Entra ID to access the ProductsAgent chat."
+            f"Please authenticate with {auth_provider} to access the ProductsAgent chat."
         )
 
         with st.expander("ℹ️ Configuration Details", expanded=False):
@@ -591,8 +605,9 @@ def main():
         )
 
         # Authorization button
+        auth_button_text = "Login with Keycloak" if "keycloak" in auth_provider.lower() else "Login with Microsoft"
         result = oauth2.authorize_button(
-            "Login with Microsoft",
+            auth_button_text,
             REDIRECT_URI,
             SCOPE,
             height=600,

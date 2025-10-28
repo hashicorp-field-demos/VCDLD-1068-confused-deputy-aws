@@ -98,7 +98,7 @@ module "keycloak" {
   alb_https_url  = module.bastion.alb_https_url
 }
 
-# Module 6: Vault Authentication and Database Configuration
+# Module 6: Vault Authentication and Database Configuration (Entra ID)
 module "vault_auth" {
   source = "./modules/vault-auth"
 
@@ -115,3 +115,22 @@ module "vault_auth" {
 
   depends_on = [module.hcp_vault]
 }
+
+# Module 6b: Vault Authentication with Keycloak (Alternative)
+# Note: To use Keycloak authentication, comment out module "vault_auth" above and uncomment this block
+# module "vault_auth_keycloak" {
+#   source = "./modules/vault-auth"
+#
+#   docdb_cluster_endpoint = module.aws_documentdb.cluster_endpoint
+#   docdb_username         = var.docdb_master_username
+#   docdb_password         = var.docdb_master_password
+#
+#   # JWT Auth configuration for Keycloak
+#   jwt_oidc_discovery_url     = module.keycloak.oidc_discovery_url
+#   jwt_bound_issuer           = module.keycloak.oidc_issuer_url
+#   jwt_bound_audiences        = module.keycloak.products_mcp_client_id
+#   readonly_group_alias_name  = module.keycloak.dbread_group_name
+#   readwrite_group_alias_name = module.keycloak.dbadmin_group_name
+#
+#   depends_on = [module.hcp_vault, module.keycloak]
+# }
